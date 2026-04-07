@@ -5,7 +5,6 @@ on:
     tags:
       - 'v*.*.*'
 
-  # Allow manual trigger for testing
   workflow_dispatch:
     inputs:
       dry_run:
@@ -20,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write   # needed if you ever switch to GitHub Packages
+      packages: write
 
     steps:
       - name: Checkout
@@ -35,20 +34,17 @@ jobs:
       - name: Generate proto code (TS + Go)
         run: buf generate
 
-      # ── Setup Node.js ──────────────────────────────────────────────────────
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # ── Setup Bun ──────────────────────────────────────────────────────────
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
+          bun-version: latest
 
-      # ── Install & Build ────────────────────────────────────────────────────
       - name: Install dependencies
-        run: npm install
+        run: bun install
 
       - name: Build TypeScript
-        run: npm run build
+        run: bun run build
 
       # ── Extract version from git tag ───────────────────────────────────────
       - name: Set package version from tag
@@ -57,25 +53,30 @@ jobs:
           echo "Publishing version: $TAG"
           npm version "$TAG" --no-git-tag-version
 
-      # ── Dry run (inspect tarball without publishing) ───────────────────────
+      # ── Dry run ───────────────────────────────────────────────────────────
       - name: Pack (dry run preview)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
         run: npm pack --dry-run
 
       # ── Publish ────────────────────────────────────────────────────────────
+      - name: Setup Node.js (for npm publish)
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run != true) }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
       - name: Publish to NPM
-        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run != 'true') }}
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run != true) }}
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # ── Tag Go module (makes it available via go get vX.Y.Z) ─────────────────
-  tag-go:
-    name: Tag Go Module
+  # ── Ensure go.sum is committed and Go module compiles ─────────────────────
+  verify-go:
+    name: Verify Go Module
     runs-on: ubuntu-latest
     needs: publish
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
@@ -85,8 +86,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+          cache: true
 
-      - name: Setup Buf & generate Go code
+      - name: Setup Buf
         uses: bufbuild/buf-setup-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -94,10 +96,8 @@ jobs:
       - name: Generate Go code
         run: buf generate
 
-      - name: Commit generated Go code
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add gen/go
-          git diff --cached --quiet || git commit -m "chore: update generated Go code for ${{ github.ref_name }}"
-          git push origin HEAD:main || true
+      - name: Tidy Go dependencies
+        run: go mod tidy
+
+      - name: Build Go module
+        run: go build ./...

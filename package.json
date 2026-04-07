@@ -43,7 +43,7 @@
   "scripts": {
     "generate": "buf generate",
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "build": "bun run clean && tsc -p tsconfig.json",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
