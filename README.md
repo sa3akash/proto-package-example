@@ -40,39 +40,47 @@ All request fields carry [`protovalidate`](https://github.com/bufbuild/protovali
 ```
 proto-package-example/
 ├── protos/
-│   ├── users.proto                   # UserService definition + validation
-│   └── posts.proto                   # PostService definition + validation
+│   ├── users/v1/
+│   │   └── users.proto              # package users.v1 — UserService + validation
+│   └── posts/v1/
+│       └── posts.proto              # package posts.v1 — PostService + validation
 │
-├── gen/                              # ⚠️ Generated — do not edit manually
-│   ├── ts/                           # TypeScript (compiled → dist/)
-│   │   ├── users_pb.ts               # User messages & enums
-│   │   ├── users_connect.ts          # UserService descriptor
-│   │   ├── posts_pb.ts               # Post messages & enums
-│   │   ├── posts_connect.ts          # PostService descriptor
+├── gen/                             # ⚠️ Generated — do not edit manually
+│   ├── ts/                          # TypeScript source (compiled → dist/)
+│   │   ├── users/v1/
+│   │   │   ├── users_pb.ts          # User messages & enums
+│   │   │   └── users_connect.ts     # UserService descriptor
+│   │   ├── posts/v1/
+│   │   │   ├── posts_pb.ts          # Post messages & enums
+│   │   │   └── posts_connect.ts     # PostService descriptor
 │   │   └── buf/validate/
-│   │       └── validate_pb.ts        # protovalidate runtime types
-│   └── go/                           # Go packages (go get-able)
-│       ├── users.pb.go               # package usersv1  — proto messages
-│       ├── posts.pb.go               # package postsv1  — proto messages
-│       ├── usersv1connect/
-│       │   └── users.connect.go      # package usersv1connect — service interface & client
-│       ├── postsv1connect/
-│       │   └── posts.connect.go      # package postsv1connect — service interface & client
+│   │       └── validate_pb.ts       # protovalidate runtime types
+│   └── go/                          # Go packages (go get-able)
+│       ├── users/v1/
+│       │   ├── users.pb.go          # package usersv1  — proto messages
+│       │   └── usersv1connect/
+│       │       └── users.connect.go # package usersv1connect — service interface & client
+│       ├── posts/v1/
+│       │   ├── posts.pb.go          # package postsv1  — proto messages
+│       │   └── postsv1connect/
+│       │       └── posts.connect.go # package postsv1connect — service interface & client
 │       └── buf/validate/
-│           └── validate.pb.go        # protovalidate Go types
+│           └── validate.pb.go       # protovalidate Go types
 │
-├── dist/                             # Built JS + .d.ts (published to npm)
-│   ├── users_pb.js / .d.ts
-│   ├── users_connect.js / .d.ts
-│   ├── posts_pb.js / .d.ts
-│   └── posts_connect.js / .d.ts
+├── dist/                            # Built JS + .d.ts (published to npm)
+│   ├── users/v1/
+│   │   ├── users_pb.js / .d.ts
+│   │   └── users_connect.js / .d.ts
+│   └── posts/v1/
+│       ├── posts_pb.js / .d.ts
+│       └── posts_connect.js / .d.ts
 │
-├── buf.yaml                          # Buf workspace config
-├── buf.gen.yaml                      # Code generation plugins config
-├── buf.lock                          # Locked buf dependency versions
-├── go.mod                            # Go module (github.com/sa3akash/proto-package-example)
-├── tsconfig.json                     # Compiles gen/ts → dist
-└── package.json                      # NPM package (@sa3akash/proto)
+├── buf.yaml                         # Buf workspace config (lint: STANDARD)
+├── buf.gen.yaml                     # Code generation plugins
+├── buf.lock                         # Locked buf dependency versions
+├── go.mod                           # Go module (github.com/sa3akash/proto-package-example)
+├── tsconfig.json                    # Compiles gen/ts → dist
+└── package.json                     # NPM package (@sa3akash/proto)
 ```
 
 > **Why `usersv1connect/` and `postsv1connect/`?**
@@ -192,10 +200,10 @@ go get github.com/sa3akash/proto-package-example
 
 | Import path | Package | Contents |
 |-------------|---------|----------|
-| `.../gen/go` | `usersv1` | Proto messages: `User`, `CreateUserRequest`, … |
-| `.../gen/go/usersv1connect` | `usersv1connect` | `UserServiceClient`, `UserServiceHandler`, `NewUserServiceHandler` |
-| `.../gen/go` | `postsv1` | Proto messages: `Post`, `CreatePostRequest`, … |
-| `.../gen/go/postsv1connect` | `postsv1connect` | `PostServiceClient`, `PostServiceHandler`, `NewPostServiceHandler` |
+| `.../gen/go/users/v1` | `usersv1` | Proto messages: `User`, `CreateUserRequest`, … |
+| `.../gen/go/users/v1/usersv1connect` | `usersv1connect` | `UserServiceClient`, `UserServiceHandler`, `NewUserServiceHandler` |
+| `.../gen/go/posts/v1` | `postsv1` | Proto messages: `Post`, `CreatePostRequest`, … |
+| `.../gen/go/posts/v1/postsv1connect` | `postsv1connect` | `PostServiceClient`, `PostServiceHandler`, `NewPostServiceHandler` |
 
 ### ConnectRPC server
 
@@ -248,8 +256,8 @@ func main() {
 import (
     "net/http"
     "connectrpc.com/connect"
-    proto "github.com/sa3akash/proto-package-example/gen/go"
-    "github.com/sa3akash/proto-package-example/gen/go/usersv1connect"
+    proto "github.com/sa3akash/proto-package-example/gen/go/users/v1"
+    "github.com/sa3akash/proto-package-example/gen/go/users/v1/usersv1connect"
 )
 
 client := usersv1connect.NewUserServiceClient(

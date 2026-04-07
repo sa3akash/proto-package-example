@@ -9,24 +9,24 @@
     "url": "https://github.com/sa3akash/proto-package-example.git"
   },
   "type": "module",
-  "main": "./dist/users_pb.js",
-  "types": "./dist/users_pb.d.ts",
+  "main": "./dist/users/v1/users_pb.js",
+  "types": "./dist/users/v1/users_pb.d.ts",
   "exports": {
     "./users": {
-      "import": "./dist/users_pb.js",
-      "types": "./dist/users_pb.d.ts"
+      "import": "./dist/users/v1/users_pb.js",
+      "types": "./dist/users/v1/users_pb.d.ts"
     },
     "./users/connect": {
-      "import": "./dist/users_connect.js",
-      "types": "./dist/users_connect.d.ts"
+      "import": "./dist/users/v1/users_connect.js",
+      "types": "./dist/users/v1/users_connect.d.ts"
     },
     "./posts": {
-      "import": "./dist/posts_pb.js",
-      "types": "./dist/posts_pb.d.ts"
+      "import": "./dist/posts/v1/posts_pb.js",
+      "types": "./dist/posts/v1/posts_pb.d.ts"
     },
     "./posts/connect": {
-      "import": "./dist/posts_connect.js",
-      "types": "./dist/posts_connect.d.ts"
+      "import": "./dist/posts/v1/posts_connect.js",
+      "types": "./dist/posts/v1/posts_connect.d.ts"
     }
   },
   "files": [
@@ -42,8 +42,8 @@
   ],
   "scripts": {
     "generate": "buf generate",
-    "build": "tsc -p tsconfig.json",
     "clean": "rimraf dist",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

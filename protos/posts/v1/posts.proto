@@ -72,7 +72,7 @@ message GetPostResponse {
   Post post = 1 [(buf.validate.field).required = true];
 }
 
-// ─── Update (all optional fields — skip validation when zero/empty) ───────────
+// ─── Update ───────────────────────────────────────────────────────────────────
 
 message UpdatePostRequest {
   string id = 1 [(buf.validate.field).string.uuid = true];
