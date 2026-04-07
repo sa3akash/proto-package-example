@@ -215,7 +215,7 @@ import (
     "net/http"
 
     "connectrpc.com/connect"
-    "github.com/bufbuild/protovalidate-go"
+    "buf.build/go/protovalidate"
 
     proto "github.com/sa3akash/proto-package-example/gen/go"
     "github.com/sa3akash/proto-package-example/gen/go/usersv1connect"
