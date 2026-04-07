@@ -1,0 +1,34 @@
+version: v2
+
+clean: true
+
+plugins:
+  # ── TypeScript: protobuf-es (message types) ───────────────────────────────
+  - remote: buf.build/bufbuild/es
+    out: gen/ts
+    opt:
+      - target=ts
+      - import_extension=.js
+
+  # ── TypeScript: connect-es (service clients & handlers) ───────────────────
+  - remote: buf.build/connectrpc/es
+    out: gen/ts
+    opt:
+      - target=ts
+      - import_extension=.js
+
+  # ── Go: protoc-gen-go (message types) ─────────────────────────────────────
+  - remote: buf.build/protocolbuffers/go
+    out: gen/go
+    opt:
+      - paths=source_relative
+
+  # ── Go: protoc-gen-connect-go (ConnectRPC service handlers/clients) ───────
+  - remote: buf.build/connectrpc/go
+    out: gen/go
+    opt:
+      - paths=source_relative
+
+inputs:
+  - directory: protos
+  - module: buf.build/bufbuild/protovalidate

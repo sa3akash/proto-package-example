@@ -1,0 +1,103 @@
+name: Publish NPM Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (npm pack only, no publish)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    name: Build & Publish to NPM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # needed if you ever switch to GitHub Packages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Setup Buf & generate code ──────────────────────────────────────────
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate proto code (TS + Go)
+        run: buf generate
+
+      # ── Setup Node.js ──────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      # ── Install & Build ────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build TypeScript
+        run: npm run build
+
+      # ── Extract version from git tag ───────────────────────────────────────
+      - name: Set package version from tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          echo "Publishing version: $TAG"
+          npm version "$TAG" --no-git-tag-version
+
+      # ── Dry run (inspect tarball without publishing) ───────────────────────
+      - name: Pack (dry run preview)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' }}
+        run: npm pack --dry-run
+
+      # ── Publish ────────────────────────────────────────────────────────────
+      - name: Publish to NPM
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run != 'true') }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ── Tag Go module (makes it available via go get vX.Y.Z) ─────────────────
+  tag-go:
+    name: Tag Go Module
+    runs-on: ubuntu-latest
+    needs: publish
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Setup Buf & generate Go code
+        uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Go code
+        run: buf generate
+
+      - name: Commit generated Go code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gen/go
+          git diff --cached --quiet || git commit -m "chore: update generated Go code for ${{ github.ref_name }}"
+          git push origin HEAD:main || true

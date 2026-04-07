@@ -1,0 +1,17 @@
+version: v2
+
+modules:
+  - path: protos
+
+deps:
+  - buf.build/bufbuild/protovalidate
+
+lint:
+  use:
+    - DEFAULT
+  except:
+    - FIELD_LOWER_SNAKE_CASE
+
+breaking:
+  use:
+    - FILE
